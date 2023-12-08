@@ -1,0 +1,24 @@
+body{
+    margin: 0%;
+    background-image: url('https://wallpapercave.com/wp/wp2968502.jpg');
+    background-size: cover;
+    height:100vh;
+}
+.navbar-brand,.nav-item a{
+    color: white;
+}
+.nav-item a:hover{
+    background-color: black;
+    color: white;
+}
+
+.custom-card:hover{
+    box-shadow: 1px 1px 4px rgba(0,0,0,0.7);
+}
+.fa-user{
+    font-size: 3rem;
+    border-radius: 50%;
+    padding: 18px;
+    width:fit-content;
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+}

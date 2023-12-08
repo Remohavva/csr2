@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg bg-success">
+        <div class="container-fluid">
+          <a class="navbar-brand text-white" href="#">Hospital Managment System</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+              <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="index.html">Home</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="doctors.html">Doctors</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="patients.html">Patients</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      <!--main part-->
+    <div class="container mt-5" id="patientCards">
+        <!-- Patient cards will be appended here -->
+    </div>
+
+    <div class="modal" tabindex="-1" id="editModal">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="editModalLabel">Modal title</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p>Edit Patient Details Here....</p>
+              <form>
+              <div class="mb-3">
+                <label for="editName" class="form-label">Name</label>
+                <input type="text" class="form-control" id="editName" required>
+              </div>
+              <div class="mb-3">
+                <label for="editDisease" class="form-label">Disease</label>
+                <input type="text" class="form-control" id="editDisease" required>
+            </div>
+        </form>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-primary" id="saveChangesBtn" onclick="saveChanges()">Save changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <script>
+        fetch("https://doc-back.onrender.com/patients")
+            .then((res) => res.json())
+            .then((res) => {
+                console.log(res);
+                const container = document.getElementById("patientCards");
+                let patients = res;
+                let row;
+
+                patients.forEach((patient, index) => {
+                    if (index % 3 === 0) {
+                        // Create a new row for every 3 cards
+                        row = document.createElement("div");
+                        row.classList.add("row");
+                        container.appendChild(row);
+                    }
+                    const card = document.createElement("div");
+                    card.classList.add("card", "m-2","col-lg-3", "col-md-5", "col-10");
+                    const cardBody = document.createElement("div");
+                    cardBody.classList.add("card-body");
+                    cardBody.innerHTML = `
+                        <h5 class="card-title">${patient.name}</h5>
+                        <p class="card-text">Age: ${patient.age}</p>
+                        <p class="card-text">Gender: ${patient.gender}</p>
+                        <p class="card-text">Weight: ${patient.weight} kg</p>
+                        <p class="card-text">Disease: ${patient.disease}</p>
+                        <p class="card-text">Doctor: ${patient.doctor}</p>
+                        <p class="card-text">ID: ${patient.id}</p>
+                        <button type="button" class="btn btn-primary" onclick="editPatient(${patient.id})">Edit</button>
+                        <button type="button" class="btn btn-danger ms-2" onclick="deletePatient(${patient.id})">Delete</button>
+                    `;
+                    card.appendChild(cardBody);
+                    row.appendChild(card);
+                });
+            })
+            .catch((error) => {
+                console.error("Error fetching data:", error);
+            });
+        function editPatient(patientId) {
+            const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+            fetch(`https://doc-back.onrender.com/patients/${patientId}`)
+                .then((res) => res.json())
+                .then((patient) => {
+                    document.getElementById('editName').value = patient.name;
+                    document.getElementById('editDisease').value = patient.disease;
+                    document.getElementById('saveChangesBtn').setAttribute('data-patient-id', patientId);
+                })
+                .catch((error) => {
+                    console.error("Error fetching patient data:", error);
+                });
+
+            // Show the modal
+            editModal.show();
+        }
+        function saveChanges() {
+            const patientId = document.getElementById('saveChangesBtn').getAttribute('data-patient-id');
+
+            const newName = document.getElementById('editName').value;
+            const newDisease = document.getElementById('editDisease').value;
+            fetch(`https://doc-back.onrender.com/patients/${patientId}`)
+                .then((res) => res.json())
+                .then((existingPatient) => {
+                    existingPatient.name = newName;
+                    existingPatient.disease = newDisease;
+                    return fetch(`https://doc-back.onrender.com/patients/${patientId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(existingPatient),
+                    });
+                })
+                .then((res) => res.json())
+                .then((updatedPatient) => {
+                    console.log("Patient updated:", updatedPatient);
+                    const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+                    editModal.hide();
+                    location.reload()
+
+                })
+                .catch((error) => {
+                    console.error("Error updating patient:", error);
+                });
+        }
+        function deletePatient(patientId) {
+            if (confirm("Are you sure you want to delete this patient?")) {
+                fetch(`https://doc-back.onrender.com/patients/${patientId}`, {
+                    method: 'DELETE',
+                })
+                    .then((res) => {
+                        if (res.ok) {
+                            console.log("Patient deleted successfully");
+                            location.reload()
+                        } else {
+                            console.error("Error deleting patient:", res.statusText);
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Error deleting patient:", error);
+                    });
+            }
+        }
+    </script>
+    
+
+
+
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+</body>
+</html>
